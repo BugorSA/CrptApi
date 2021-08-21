@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class CrptApi {
 
-    // TODO: Clean up stale entries
+
     private final ConcurrentMap<Long, AtomicInteger> windows = new ConcurrentHashMap<>();
 
     protected final int requestLimit;
