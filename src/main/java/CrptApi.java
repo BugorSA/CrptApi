@@ -43,8 +43,8 @@ public class CrptApi {
 
     private void introduceInCirculationUncheck(JsonObject jsonDocument, String signature) throws IOException {
         JsonObject requestBody = buildReqBody(jsonDocument, signature, "LP_INTRODUCE_GOODS");
-        HttpService httpService = new HttpService("https://ismp.crpt.ru/api/v3/lk/documents/create", token, requestBody.toString());
-        httpService.connect();
+        HTTPService httpService = new HTTPService();
+        httpService.connect("https://ismp.crpt.ru/api/v3/lk/documents/create", token, requestBody.toString());
     }
 
     private JsonObject buildReqBody(JsonObject jsonDocument, String signature, String type) {
@@ -73,57 +73,31 @@ interface RequestBuilder {
     void setEntity(String params) throws UnsupportedEncodingException;
 }
 
-class HttpService {
-
-    private String uri;
-    private String token;
-    private String params;
-
-    public String getUri() {
-        return uri;
+class HTTPService {
+    public HTTPService() {
     }
 
-    public void setUri(String uri) {
-        this.uri = uri;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public String getParams() {
-        return params;
-    }
-
-    public void setParams(String params) {
-        this.params = params;
-    }
-
-    public HttpService(String uri, String token, String params) {
-        this.uri = uri;
-        this.token = token;
-        this.params = params;
-    }
-
-    public void connect() throws IOException {
+    public void connect(String uri, String token, String params) throws IOException {
+        Director director = new Director();
         HttpClient httpClient = HttpClientBuilder.create().build();
-
-        RequestWithTokenBuilder requestBuilder = new RequestWithTokenBuilder();
-        requestBuilder.reset(uri);
-        requestBuilder.setContentType("application/json");
-        requestBuilder.setToken(token);
-        requestBuilder.setEntity(params);
+        GIS_MP_API_Builder requestBuilder = new GIS_MP_API_Builder();
+        director.createMinJsonRequestWithToken(requestBuilder, uri, token, params);
         HttpPost request = requestBuilder.getResult();
-
         httpClient.execute(request);
     }
 }
 
-class RequestWithTokenBuilder implements RequestBuilder {
+class Director {
+    public void createMinJsonRequestWithToken(RequestBuilder requestBuilder, String uri, String token,
+                                              String params) throws UnsupportedEncodingException {
+        requestBuilder.reset(uri);
+        requestBuilder.setContentType("application/json");
+        requestBuilder.setToken(token);
+        requestBuilder.setEntity(params);
+    }
+}
+
+class GIS_MP_API_Builder implements RequestBuilder {
 
     private HttpPost request;
 
