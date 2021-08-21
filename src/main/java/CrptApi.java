@@ -34,7 +34,6 @@ public class CrptApi {
         this.timeUnit = timeUnit;
     }
 
-
     public boolean introduceIntoCirculation(JsonObject jsonDocument, String signature) throws IOException {
         if (!allow()) {
             introduceInCirculationUncheck(jsonDocument, signature);
