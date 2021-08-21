@@ -1,12 +1,12 @@
 import com.google.gson.JsonObject;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -14,12 +14,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class CrptApi {
 
-
     private final ConcurrentMap<Long, AtomicInteger> windows = new ConcurrentHashMap<>();
 
     protected final int requestLimit;
 
     private final TimeUnit timeUnit;
+
+    private String token = "sdsdsdsdsXD";
 
     boolean allow() {
         long windowKey = timeUnit.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
@@ -27,41 +28,28 @@ public class CrptApi {
         return windows.get(windowKey).incrementAndGet() <= requestLimit;
     }
 
-    private String token = "sdsdsdsdsXD";
-
     public CrptApi(TimeUnit timeUnit, int requestLimit) {
         this.requestLimit = requestLimit;
         this.timeUnit = timeUnit;
     }
 
 
-    public boolean introduceIntoCirculation(JsonObject jsonDocument, String signature) {
+    public boolean introduceIntoCirculation(JsonObject jsonDocument, String signature) throws IOException {
         if (!allow()) {
-            return introduceInCirculationUncheck(jsonDocument, signature);
+            introduceInCirculationUncheck(jsonDocument, signature);
+            return true;
         } else return false;
     }
 
-    private boolean introduceInCirculationUncheck(JsonObject jsonDocument, String signature) {
-
+    private void introduceInCirculationUncheck(JsonObject jsonDocument, String signature) throws IOException {
         HttpClient httpClient = HttpClientBuilder.create().build();
-
         JsonObject requestBody = buildReqBody(jsonDocument, signature);
-
-        try {
-
-            HttpPost request = new HttpPost("https://ismp.crpt.ru/api/v3/lk/documents/create");
-
-            StringEntity params = new StringEntity(requestBody.toString());
-            request.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-            request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
-            request.setEntity(params);
-            HttpResponse response = httpClient.execute(request);
-            //System.out.println(response.toString());
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return false;
-        }
-        return true;
+        HttpPost request = new HttpPost("https://ismp.crpt.ru/api/v3/lk/documents/create");
+        StringEntity params = new StringEntity(requestBody.toString());
+        request.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        request.setEntity(params);
+        httpClient.execute(request);
     }
 
     private JsonObject buildReqBody(JsonObject jsonDocument, String signature) {

@@ -1,22 +1,24 @@
 import com.google.gson.JsonObject;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
     public static void main(String[] args) throws InterruptedException {
         final int MAX_REQUESTS_PER_SEC = 3;
-        CrptApi crptApi  = new CrptApi(TimeUnit.SECONDS,MAX_REQUESTS_PER_SEC); // new a RateLimiter here
+        CrptApi crptApi = new CrptApi(TimeUnit.SECONDS, MAX_REQUESTS_PER_SEC);
+        crptApi.setToken("dont worry 12345 #$%");
 
         Thread requestThread = new Thread(() -> {
             sendRequest(crptApi, 10, 1);
             sendRequest(crptApi, 20, 2);
-            sendRequest(crptApi,50, 5);
-            sendRequest(crptApi,100, 10);
-//            sendRequest(crptApi,200, 20);
-//            sendRequest(crptApi,250, 25);
-//            sendRequest(crptApi,500, 50);
-//            sendRequest(crptApi,1000, 100);
+            sendRequest(crptApi, 50, 5);
+            sendRequest(crptApi, 100, 10);
+            sendRequest(crptApi, 200, 20);
+            sendRequest(crptApi, 250, 25);
+            sendRequest(crptApi, 500, 50);
+            sendRequest(crptApi, 1000, 100);
         });
 
         requestThread.start();
@@ -29,7 +31,12 @@ public class Main {
         for (int i = 0; i < totalCnt; i++) {
             try {
                 new Thread(() -> {
-                    while (crptApi.introduceIntoCirculation(new JsonObject(), "asfa")) {
+                    while (true) {
+                        try {
+                            if (!crptApi.introduceIntoCirculation(new JsonObject(), "asfa")) break;
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                         try {
                             TimeUnit.MILLISECONDS.sleep(10);
                         } catch (InterruptedException e) {
