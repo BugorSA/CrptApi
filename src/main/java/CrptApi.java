@@ -7,6 +7,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -42,28 +43,87 @@ public class CrptApi {
     }
 
     private void introduceInCirculationUncheck(JsonObject jsonDocument, String signature) throws IOException {
-        HttpClient httpClient = HttpClientBuilder.create().build();
-        JsonObject requestBody = buildReqBody(jsonDocument, signature);
-        HttpPost request = new HttpPost("https://ismp.crpt.ru/api/v3/lk/documents/create");
-        StringEntity params = new StringEntity(requestBody.toString());
-        request.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-        request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
-        request.setEntity(params);
-        httpClient.execute(request);
+        JsonObject requestBody = buildReqBody(jsonDocument, signature, "LP_INTRODUCE_GOODS");
+        HTTPService httpService = new HTTPService();
+        httpService.connect("https://ismp.crpt.ru/api/v3/lk/documents/create", token, requestBody.toString());
     }
 
-    private JsonObject buildReqBody(JsonObject jsonDocument, String signature) {
+    private JsonObject buildReqBody(JsonObject jsonDocument, String signature, String type) {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("document_format", "MANUAL");
         byte[] bytesEncoded = Base64.encodeBase64(jsonDocument.toString().getBytes());
         requestBody.addProperty("product_document", new String(bytesEncoded));
         bytesEncoded = Base64.encodeBase64(signature.getBytes());
         requestBody.addProperty("signature", new String(bytesEncoded));
-        requestBody.addProperty("type", "LP_INTRODUCE_GOODS");
+        requestBody.addProperty("type", type);
         return requestBody;
     }
 
     public void setToken(String token) {
         this.token = token;
+    }
+}
+
+interface RequestBuilder {
+    void reset(String uri);
+
+    void setContentType(String contentType);
+
+    void setToken(String token);
+
+    void setEntity(String params) throws UnsupportedEncodingException;
+}
+
+class HTTPService {
+    public HTTPService() {
+    }
+
+    public void connect(String uri, String token, String params) throws IOException {
+        Director director = new Director();
+        HttpClient httpClient = HttpClientBuilder.create().build();
+        GIS_MP_API_Builder requestBuilder = new GIS_MP_API_Builder();
+        director.createMinJsonRequestWithToken(requestBuilder, uri, token, params);
+        HttpPost request = requestBuilder.getResult();
+        httpClient.execute(request);
+    }
+}
+
+class Director {
+    public void createMinJsonRequestWithToken(RequestBuilder requestBuilder, String uri, String token,
+                                              String params) throws UnsupportedEncodingException {
+        requestBuilder.reset(uri);
+        requestBuilder.setContentType("application/json");
+        requestBuilder.setToken(token);
+        requestBuilder.setEntity(params);
+    }
+}
+
+class GIS_MP_API_Builder implements RequestBuilder {
+
+    private HttpPost request;
+
+    public HttpPost getResult() {
+        return request;
+    }
+
+    @Override
+    public void setContentType(String contentType) {
+        request.setHeader(HttpHeaders.CONTENT_TYPE, contentType);
+    }
+
+    @Override
+    public void setToken(String token) {
+        request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+    }
+
+    @Override
+    public void setEntity(String params) throws UnsupportedEncodingException {
+        StringEntity stringEntity = new StringEntity(params);
+        request.setEntity(stringEntity);
+    }
+
+    @Override
+    public void reset(String uri) {
+        request = new HttpPost(uri);
     }
 }
